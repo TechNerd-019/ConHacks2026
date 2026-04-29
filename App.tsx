@@ -6,6 +6,7 @@ import Dashboard from './components/Dashboard';
 import PlantDetails from './components/PlantDetails';
 import Assistant from './components/Assistant';
 import AddPlant from './components/AddPlant';
+import SensorData from './components/SensorData';
 import { View, Plant, Message } from './types';
 import { INITIAL_PLANTS, INITIAL_MESSAGES } from './constants';
 
@@ -103,15 +104,7 @@ export default function App() {
       case 'assistant':
         return <Assistant messages={messages} onSendMessage={handleSendMessage} />;
       case 'analytics':
-        return (
-          <RNView style={styles.analyticsContainer}>
-            <RNView style={styles.analyticsIconBg}>
-              <ActivityIndicator size="large" color="#166534" />
-            </RNView>
-            <Text style={styles.analyticsTitle}>Growth Analytics</Text>
-            <Text style={styles.analyticsSubtitle}>Detailed insights and growth trends are being prepared for your garden.</Text>
-          </RNView>
-        );
+        return <SensorData />;
       case 'add':
         return <AddPlant onAdd={handleAddPlant} onCancel={() => setActiveView('garden')} />;
       default:
