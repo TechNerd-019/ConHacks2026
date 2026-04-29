@@ -2,6 +2,17 @@
   "expo": {
     "name": "planthub",
     "slug": "planthub",
-    "version": "1.0.0"
+    "version": "1.0.0",
+    "android": {
+      "permissions": ["CAMERA"]
+    },
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow PlantHub to use your camera to photograph plants."
+        }
+      ]
+    ]
   }
 }
