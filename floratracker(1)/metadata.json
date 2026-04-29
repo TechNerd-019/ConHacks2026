@@ -1,6 +1,0 @@
-{
-  "name": "FloraTracker",
-  "description": "A premium indoor plant management system with AI-powered care assistant and sensor-driven health monitoring.",
-  "requestFramePermissions": ["camera"],
-  "majorCapabilities": ["AI Assistant", "Plant Identification", "Health Monitoring"]
-}
