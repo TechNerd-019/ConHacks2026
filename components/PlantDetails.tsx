@@ -26,6 +26,7 @@ import {
   Camera,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
+import { LineChart } from "react-native-chart-kit";
 import { Plant } from "../types";
 
 import * as ImagePicker from 'expo-image-picker';
@@ -311,26 +312,74 @@ export default function PlantDetails({
           </View>
 
           {/* History */}
-          {history.length > 0 && (
-            <View style={styles.historySection}>
-              <Text style={styles.profileTitle}>📊 Sensor History</Text>
-              {history.map((r: any, i: number) => {
-                const d = new Date(r.timestamp);
-                const time = d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-                return (
-                  <View key={i} style={styles.historyRow}>
-                    <Text style={styles.historyTime}>{time}</Text>
-                    <View style={styles.historyMetrics}>
-                      <Text style={styles.historyVal}>🌡{r.temperature_f}°F</Text>
-                      <Text style={styles.historyVal}>💧{r.humidity}%</Text>
-                      <Text style={styles.historyVal}>🪴{r.soil_moisture_raw}</Text>
-                      <Text style={styles.historyVal}>🚰{r.water_level_raw}</Text>
-                    </View>
-                  </View>
-                );
-              })}
-            </View>
-          )}
+          {history.length > 1 && (() => {
+            const reversed = [...history].reverse();
+            const labels = reversed.map((r: any) => {
+              const d = new Date(r.timestamp);
+              return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            }).filter((_: any, i: number) => i % Math.ceil(reversed.length / 5) === 0);
+            const chartWidth = width - 48;
+            const chartConfig = {
+              backgroundGradientFrom: '#fff',
+              backgroundGradientTo: '#fff',
+              color: (opacity = 1) => `rgba(22, 101, 52, ${opacity})`,
+              labelColor: () => '#71717a',
+              propsForDots: { r: '3' },
+              decimalPlaces: 0,
+            };
+            return (
+              <View style={styles.historySection}>
+                <Text style={styles.profileTitle}>📊 Temperature (°F)</Text>
+                <LineChart
+                  data={{
+                    labels,
+                    datasets: [{ data: reversed.map((r: any) => r.temperature_f || 0) }],
+                  }}
+                  width={chartWidth}
+                  height={160}
+                  chartConfig={chartConfig}
+                  bezier
+                  style={{ borderRadius: 12, marginBottom: 16 }}
+                />
+                <Text style={styles.profileTitle}>💧 Humidity (%)</Text>
+                <LineChart
+                  data={{
+                    labels,
+                    datasets: [{ data: reversed.map((r: any) => r.humidity || 0), color: () => '#60a5fa' }],
+                  }}
+                  width={chartWidth}
+                  height={160}
+                  chartConfig={{ ...chartConfig, color: (o = 1) => `rgba(96, 165, 250, ${o})` }}
+                  bezier
+                  style={{ borderRadius: 12, marginBottom: 16 }}
+                />
+                <Text style={styles.profileTitle}>🪴 Soil Moisture</Text>
+                <LineChart
+                  data={{
+                    labels,
+                    datasets: [{ data: reversed.map((r: any) => r.soil_moisture_raw || 0) }],
+                  }}
+                  width={chartWidth}
+                  height={160}
+                  chartConfig={{ ...chartConfig, color: (o = 1) => `rgba(234, 179, 8, ${o})` }}
+                  bezier
+                  style={{ borderRadius: 12, marginBottom: 16 }}
+                />
+                <Text style={styles.profileTitle}>🚰 Water Level</Text>
+                <LineChart
+                  data={{
+                    labels,
+                    datasets: [{ data: reversed.map((r: any) => r.water_level_raw || 0) }],
+                  }}
+                  width={chartWidth}
+                  height={160}
+                  chartConfig={{ ...chartConfig, color: (o = 1) => `rgba(8, 145, 178, ${o})` }}
+                  bezier
+                  style={{ borderRadius: 12 }}
+                />
+              </View>
+            );
+          })()}
         </View>
       </ScrollView>
 
@@ -632,12 +681,11 @@ const styles = StyleSheet.create({
     marginBottom: 32,
   },
   sensorCard: {
-    width: (width - 48 - 16) / 2, // 2 cols minus padding and gap
-    aspectRatio: 1,
+    width: (width - 48 - 16) / 2,
     backgroundColor: "#ffffff",
-    borderRadius: 24,
-    padding: 20,
-    marginBottom: 16,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
@@ -679,14 +727,14 @@ const styles = StyleSheet.create({
   },
   addSensorCard: {
     width: (width - 48 - 16) / 2,
-    aspectRatio: 1,
-    borderRadius: 24,
+    borderRadius: 16,
     borderWidth: 2,
     borderColor: "#e4e4e7",
     borderStyle: "dashed",
     alignItems: "center",
     justifyContent: "center",
-    marginBottom: 16,
+    padding: 14,
+    marginBottom: 12,
   },
   addSensorIcon: {
     width: 48,

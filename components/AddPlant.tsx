@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   Animated,
   PanResponder,
   Dimensions,
+  Keyboard,
 } from "react-native";
 import {
   X,
@@ -38,6 +39,27 @@ export default function AddPlant({ onAdd, onCancel }: AddPlantProps) {
   });
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView>(null);
+  const scrollRef = useRef<ScrollView>(null);
+
+  const expandAndScroll = () => {
+    sheetOffset.current = sheetMax;
+    Animated.spring(sheetAnim, { toValue: sheetMax, useNativeDriver: false, bounciness: 4 }).start();
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 300);
+  };
+
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', (e) => {
+      const fullHeight = screenHeight - 40;
+      sheetOffset.current = fullHeight;
+      Animated.timing(sheetAnim, { toValue: fullHeight, duration: 200, useNativeDriver: false }).start();
+      setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 100);
+    });
+    const hideSub = Keyboard.addListener('keyboardDidHide', () => {
+      sheetOffset.current = sheetMax;
+      Animated.timing(sheetAnim, { toValue: sheetMax, duration: 200, useNativeDriver: false }).start();
+    });
+    return () => { showSub.remove(); hideSub.remove(); };
+  }, []);
 
   const screenHeight = Dimensions.get("window").height;
   const sheetMax = screenHeight * 0.55;
@@ -150,7 +172,7 @@ export default function AddPlant({ onAdd, onCancel }: AddPlantProps) {
             <View style={styles.handleBar} />
           </View>
 
-          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetScroll}>
+          <ScrollView ref={scrollRef} showsVerticalScrollIndicator={false} contentContainerStyle={styles.sheetScroll}>
             <View style={styles.sheetHeader}>
               <View style={styles.thumbnailCont}>
                 {photo && <Image source={{ uri: photo }} style={styles.thumbnail} />}
@@ -202,6 +224,7 @@ export default function AddPlant({ onAdd, onCancel }: AddPlantProps) {
                   placeholderTextColor="#a1a1aa"
                   multiline
                   numberOfLines={3}
+                  onFocus={expandAndScroll}
                 />
               </View>
             </View>

@@ -64,22 +64,7 @@ export const INITIAL_MESSAGES: Message[] = [
   {
     id: "m1",
     role: "bot",
-    content:
-      "Hello! How is your Monstera Deliciosa doing today? I noticed it hasn't been watered in 12 days.",
-    timestamp: new Date(),
-  },
-  {
-    id: "m2",
-    role: "user",
-    content:
-      "The leaves are looking a bit droopy, and the top two inches of soil feel very dry to the touch.",
-    timestamp: new Date(),
-  },
-  {
-    id: "m3",
-    role: "bot",
-    content:
-      "It sounds like it's definitely thirsty. Monstera prefer their soil to dry out slightly between waterings, but not completely.\n\nTry giving it about 500ml of water slowly, ensuring the water reaches the root zone. Make sure the excess water drains out completely from the bottom of the pot to prevent root rot.",
+    content: "Hi! I'm Flora, your plant assistant. I can see your live sensor data and history. Ask me anything about your plants!",
     timestamp: new Date(),
   },
 ];

@@ -21,7 +21,7 @@ export interface Plant {
   isFavorite?: boolean;
 }
 
-export type View = "garden" | "analytics" | "add" | "assistant" | "detail" | "history";
+export type View = "garden" | "analytics" | "add" | "assistant" | "detail" | "history" | "profile";
 
 export interface Message {
   id: string;

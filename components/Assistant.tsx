@@ -32,8 +32,8 @@ export default function Assistant({ messages, onSendMessage }: AssistantProps) {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === "ios" ? "padding" : undefined}
-      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 0}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+      keyboardVerticalOffset={Platform.OS === "ios" ? 100 : 80}
     >
       <ScrollView
         ref={scrollViewRef}

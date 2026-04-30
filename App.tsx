@@ -8,17 +8,32 @@ import Assistant from './components/Assistant';
 import AddPlant from './components/AddPlant';
 import SensorData from './components/SensorData';
 import History from './components/History';
+import Auth from './components/Auth';
+import Profile from './components/Profile';
 import { View, Plant, Message } from './types';
 import { INITIAL_MESSAGES } from './constants';
 import { supabase } from './utils/supabase';
+import { Session } from '@supabase/supabase-js';
 
 export default function App() {
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
   const [activeView, setActiveView] = useState<View>('garden');
   const [selectedPlant, setSelectedPlant] = useState<Plant | null>(null);
   const [plants, setPlants] = useState<Plant[]>([]);
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [loading, setLoading] = useState(true);
 
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setAuthLoading(false);
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setSession(session);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   // Plant fetching logic using Supabase
   const fetchPlants = async () => {
@@ -41,13 +56,25 @@ export default function App() {
   };
 
   useEffect(() => {
-    fetchPlants();
-  }, []);
+    if (session) fetchPlants();
+  }, [session]);
 
   // Refetch when returning to garden
   useEffect(() => {
-    if (activeView === 'garden') fetchPlants();
+    if (session && activeView === 'garden') fetchPlants();
   }, [activeView]);
+
+  if (authLoading) {
+    return (
+      <RNView style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fafafa' }}>
+        <ActivityIndicator size="large" color="#166534" />
+      </RNView>
+    );
+  }
+
+  if (!session) {
+    return <Auth onAuth={() => {}} />;
+  }
 
   // -------------------------
   // UI HANDLERS
@@ -113,7 +140,7 @@ export default function App() {
     }
   };
 
-  const handleSendMessage = (content: string) => {
+  const handleSendMessage = async (content: string) => {
     const newUserMsg: Message = {
       id: `m${messages.length + 1}`,
       role: 'user',
@@ -121,19 +148,30 @@ export default function App() {
       timestamp: new Date(),
     };
 
-    setMessages([...messages, newUserMsg]);
+    setMessages(prev => [...prev, newUserMsg]);
 
-    setTimeout(() => {
+    try {
+      const res = await fetch('http://100.85.228.88:5000/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: content }),
+      });
+      const data = await res.json();
       const botMsg: Message = {
         id: `m${messages.length + 2}`,
         role: 'bot',
-        content:
-          "I'm processing that. Is there anything else you'd like to know about your garden?",
+        content: data.response,
         timestamp: new Date(),
       };
-
       setMessages(prev => [...prev, botMsg]);
-    }, 1000);
+    } catch {
+      setMessages(prev => [...prev, {
+        id: `m${messages.length + 2}`,
+        role: 'bot',
+        content: 'Sorry, I could not reach the server. Please try again.',
+        timestamp: new Date(),
+      }]);
+    }
   };
 
   const handleAddSensor = (sensorType: string) => {
@@ -268,6 +306,14 @@ export default function App() {
           />
         );
 
+      case 'profile':
+        return (
+          <Profile
+            onBack={() => setActiveView('garden')}
+            email={session?.user?.email || ''}
+          />
+        );
+
       default:
         return (
           <Dashboard
@@ -285,7 +331,7 @@ export default function App() {
       <StatusBar
         style={activeView === 'add' || activeView === 'detail' ? 'light' : 'dark'}
       />
-      <Layout activeView={activeView} onViewChange={setActiveView}>
+      <Layout activeView={activeView} onViewChange={setActiveView} onProfilePress={() => setActiveView('profile')}>
         {renderView()}
       </Layout>
     </>

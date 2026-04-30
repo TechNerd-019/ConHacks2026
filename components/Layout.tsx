@@ -17,17 +17,20 @@ import {
   Leaf,
 } from "lucide-react-native";
 import { View as ViewType } from "../types";
+import { supabase } from "../utils/supabase";
 
 interface LayoutProps {
   children: React.ReactNode;
   activeView: ViewType;
   onViewChange: (view: ViewType) => void;
+  onProfilePress: () => void;
 }
 
 export default function Layout({
   children,
   activeView,
   onViewChange,
+  onProfilePress,
 }: LayoutProps) {
   const navItems = [
     { id: "garden", label: "Garden", icon: Home },
@@ -43,7 +46,7 @@ export default function Layout({
           <Leaf size={24} color="#166534" fill="#166534" />
           <Text style={styles.headerTitle}>FloraTracker</Text>
         </View>
-        <TouchableOpacity style={styles.userButton}>
+        <TouchableOpacity style={styles.userButton} onPress={onProfilePress}>
           <User size={20} color="#52525b" />
         </TouchableOpacity>
       </View>
