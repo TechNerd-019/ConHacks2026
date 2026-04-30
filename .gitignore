@@ -34,3 +34,7 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+# Environment files with secrets
+.env
+pi/sensor_api.py

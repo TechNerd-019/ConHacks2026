@@ -23,8 +23,8 @@ led_green = GPIOLed(19)
 
 SF_CONFIG = dict(
     account='DSQTGVS-GQ78189',
-    user='HANAD11',
-    password='xebkut-nyjwuN-tokdo1',
+    user='YOUR_SNOWFLAKE_USER',
+    password='YOUR_SNOWFLAKE_PASSWORD',
     warehouse='PLANTHUB_WH',
     database='PLANTHUB',
     schema='SENSORS'
