@@ -151,11 +151,18 @@ export default function App() {
 
     setMessages(prev => [...prev, newUserMsg]);
 
+    // Check if any plant has light sensor added
+    const hasLightSensor = plants.some(p => p.metrics && 'light' in p.metrics);
+
     try {
       const res = await fetch('http://100.85.228.88:5000/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: content }),
+        body: JSON.stringify({
+          message: content,
+          plants: plants.map(p => ({ name: p.name, species: p.species })),
+          hasLightSensor,
+        }),
       });
       const data = await res.json();
       const botMsg: Message = {
