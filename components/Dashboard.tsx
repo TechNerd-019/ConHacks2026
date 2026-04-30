@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -7,7 +7,7 @@ import {
   Image,
   StyleSheet,
 } from "react-native";
-import { Camera, ArrowUp, ArrowDown, GripVertical } from "lucide-react-native";
+import { Camera, ArrowUp, ArrowDown, GripVertical, Thermometer, Droplets, Sun, Waves } from "lucide-react-native";
 import { Plant } from "../types";
 
 interface DashboardProps {
@@ -24,6 +24,21 @@ export default function Dashboard({
   onReorder,
 }: DashboardProps) {
   const [reordering, setReordering] = useState(false);
+  const [latest, setLatest] = useState<any>(null);
+
+  const fetchLatest = useCallback(async () => {
+    try {
+      const res = await fetch('http://100.85.228.88:5000/history?limit=1');
+      const json = await res.json();
+      if (json.length > 0) setLatest(json[0]);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchLatest();
+    const interval = setInterval(fetchLatest, 10000);
+    return () => clearInterval(interval);
+  }, [fetchLatest]);
 
   const moveUp = (index: number) => {
     if (index === 0 || !onReorder) return;
@@ -121,6 +136,27 @@ export default function Dashboard({
                   ]}
                 />
               </View>
+
+              {latest && (
+                <View style={styles.sensorStrip}>
+                  <View style={styles.sensorItem}>
+                    <Thermometer size={12} color="#f87171" />
+                    <Text style={styles.sensorText}>{latest.temperature_f}°F</Text>
+                  </View>
+                  <View style={styles.sensorItem}>
+                    <Droplets size={12} color="#60a5fa" />
+                    <Text style={styles.sensorText}>{latest.humidity}%</Text>
+                  </View>
+                  <View style={styles.sensorItem}>
+                    <Sun size={12} color="#eab308" />
+                    <Text style={styles.sensorText}>{latest.soil_moisture_raw}</Text>
+                  </View>
+                  <View style={styles.sensorItem}>
+                    <Waves size={12} color="#0891b2" />
+                    <Text style={styles.sensorText}>{latest.water_level_raw}</Text>
+                  </View>
+                </View>
+              )}
             </TouchableOpacity>
           ))}
         </View>
@@ -242,6 +278,24 @@ const styles = StyleSheet.create({
   progressBar: {
     height: "100%",
     borderRadius: 3,
+  },
+  sensorStrip: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginTop: 10,
+    paddingTop: 10,
+    borderTopWidth: 1,
+    borderTopColor: "#f4f4f5",
+  },
+  sensorItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 3,
+  },
+  sensorText: {
+    fontSize: 11,
+    fontWeight: "600",
+    color: "#52525b",
   },
   fab: {
     position: "absolute",

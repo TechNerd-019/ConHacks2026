@@ -173,6 +173,16 @@ export default function App() {
     setSelectedPlant(updatedPlant);
   };
 
+  const handleEditPlant = async (plantId: string, fields: { name: string; species: string; description: string }) => {
+    const { error } = await supabase.from('plants').update(fields).eq('id', Number(plantId));
+    if (error) {
+      console.error('Edit failed:', error.message);
+      return;
+    }
+    await fetchPlants();
+    setSelectedPlant((prev: any) => prev ? { ...prev, ...fields } : null);
+  };
+
   const handleDeletePlant = async (plantId: string) => {
     const { error } = await supabase.from('plants').delete().eq('id', Number(plantId));
     if (error) {
@@ -243,14 +253,12 @@ export default function App() {
             onRemoveSensor={handleRemoveSensor}
             onDelete={handleDeletePlant}
             onUpdatePhoto={handleUpdatePhoto}
+            onEdit={handleEditPlant}
           />
         ) : null;
 
       case 'assistant':
         return <Assistant messages={messages} onSendMessage={handleSendMessage} />;
-
-      case 'history':
-        return <History />;
 
       case 'add':
         return (

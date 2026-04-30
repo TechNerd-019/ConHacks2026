@@ -8,6 +8,7 @@ import {
   StyleSheet,
   Modal,
   Dimensions,
+  TextInput,
 } from "react-native";
 import {
   Heart,
@@ -38,6 +39,7 @@ interface PlantDetailsProps {
   onRemoveSensor: (sensorType: string) => void;
   onDelete: (plantId: string) => void;
   onUpdatePhoto: (plantId: string, photoUri: string) => void;
+  onEdit: (plantId: string, fields: { name: string; species: string; description: string }) => void;
 }
 
 const SENSOR_METADATA: Record<
@@ -102,26 +104,39 @@ export default function PlantDetails({
   onRemoveSensor,
   onDelete,
   onUpdatePhoto,
+  onEdit,
 }: PlantDetailsProps) {
   const [isAddingSensor, setIsAddingSensor] = useState(false);
   const [sensorToRemove, setSensorToRemove] = useState<string | null>(null);
   const [showFullImage, setShowFullImage] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [editing, setEditing] = useState(false);
+  const [editName, setEditName] = useState(plant.name);
+  const [editSpecies, setEditSpecies] = useState(plant.species);
+  const [editDescription, setEditDescription] = useState(plant.description);
   const [sensorData, setSensorData] = useState<any>(null);
+  const [history, setHistory] = useState<any[]>([]);
 
   const fetchSensorData = useCallback(async () => {
     try {
       const res = await fetch('http://100.85.228.88:5000/sensors');
-      const json = await res.json();
-      setSensorData(json);
+      setSensorData(await res.json());
+    } catch {}
+  }, []);
+
+  const fetchHistory = useCallback(async () => {
+    try {
+      const res = await fetch('http://100.85.228.88:5000/history?limit=20');
+      setHistory(await res.json());
     } catch {}
   }, []);
 
   useEffect(() => {
     fetchSensorData();
-    const interval = setInterval(fetchSensorData, 5000);
+    fetchHistory();
+    const interval = setInterval(() => { fetchSensorData(); fetchHistory(); }, 10000);
     return () => clearInterval(interval);
-  }, [fetchSensorData]);
+  }, [fetchSensorData, fetchHistory]);
 
   const handlePickPhoto = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -159,11 +174,37 @@ export default function PlantDetails({
 
         <View style={styles.content}>
           <View style={styles.headerRow}>
-            <View>
-              <Text style={styles.plantName}>{plant.name}</Text>
-              <Text style={styles.plantSpecies}>Tropical Evergreen</Text>
+            <View style={{ flex: 1 }}>
+              {editing ? (
+                <>
+                  <TextInput style={[styles.plantName, styles.editInput]} value={editName} onChangeText={setEditName} />
+                  <TextInput style={[styles.plantSpecies, styles.editInput]} value={editSpecies} onChangeText={setEditSpecies} />
+                </>
+              ) : (
+                <>
+                  <Text style={styles.plantName}>{plant.name}</Text>
+                  <Text style={styles.plantSpecies}>{plant.species}</Text>
+                </>
+              )}
             </View>
             <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity
+                style={[styles.heartButton, editing && { backgroundColor: '#166534' }]}
+                onPress={() => {
+                  if (editing) {
+                    onEdit(plant.id, { name: editName, species: editSpecies, description: editDescription });
+                    setEditing(false);
+                  } else {
+                    setEditing(true);
+                  }
+                }}
+              >
+                {editing ? (
+                  <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 12 }}>Save</Text>
+                ) : (
+                  <Text style={{ color: '#166534', fontWeight: 'bold', fontSize: 12 }}>Edit</Text>
+                )}
+              </TouchableOpacity>
               <TouchableOpacity style={styles.heartButton} onPress={handlePickPhoto}>
                 <Camera size={20} color="#166534" />
               </TouchableOpacity>
@@ -240,59 +281,56 @@ export default function PlantDetails({
               </>
             )}
 
-            {/* Placeholder sensors from plant data */}
-            {activeSensors.map((sensorKey) => {
-              const meta = SENSOR_METADATA[sensorKey];
-              const value = plant.metrics[sensorKey];
-              const Icon = meta.icon;
-
-              return (
-                <TouchableOpacity
-                  key={sensorKey}
-                  style={styles.sensorCard}
-                  onLongPress={() => setSensorToRemove(sensorKey)}
-                  delayLongPress={800}
-                  activeOpacity={0.9}
-                >
-                  <View style={styles.sensorCardHeader}>
-                    <Icon size={20} color={meta.color} />
-                    <Text style={styles.sensorCardLabel}>{meta.label}</Text>
-                  </View>
-                  <View>
-                    {value !== undefined && value !== null ? (
-                      <Text style={styles.sensorCardValue}>
-                        {value}
-                        {meta.unit}
-                      </Text>
-                    ) : (
-                      <Text style={styles.sensorCardEmpty}>Empty</Text>
-                    )}
-                    <Text style={styles.sensorCardSubtitle}>
-                      {meta.subtitle}
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              );
-            })}
-
-            {/* Add Sensor Button */}
-            <TouchableOpacity
-              style={styles.addSensorCard}
-              onPress={() => setIsAddingSensor(true)}
-              activeOpacity={0.7}
-            >
-              <View style={styles.addSensorIcon}>
-                <Plus size={24} color="#a1a1aa" />
-              </View>
-              <Text style={styles.addSensorLabel}>Add Sensor</Text>
-            </TouchableOpacity>
           </View>
+
+          {/* Add Sensor Button */}
+          <TouchableOpacity
+            style={styles.addSensorCard}
+            onPress={() => setIsAddingSensor(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.addSensorIcon}>
+              <Plus size={24} color="#a1a1aa" />
+            </View>
+            <Text style={styles.addSensorLabel}>Add Sensor</Text>
+          </TouchableOpacity>
 
           {/* Profile */}
           <View style={styles.profileSection}>
             <Text style={styles.profileTitle}>Botanical Profile</Text>
-            <Text style={styles.profileDescription}>{plant.description}</Text>
+            {editing ? (
+              <TextInput
+                style={[styles.profileDescription, styles.editInput, { height: 100, textAlignVertical: 'top' }]}
+                value={editDescription}
+                onChangeText={setEditDescription}
+                multiline
+              />
+            ) : (
+              <Text style={styles.profileDescription}>{plant.description}</Text>
+            )}
           </View>
+
+          {/* History */}
+          {history.length > 0 && (
+            <View style={styles.historySection}>
+              <Text style={styles.profileTitle}>📊 Sensor History</Text>
+              {history.map((r: any, i: number) => {
+                const d = new Date(r.timestamp);
+                const time = d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
+                return (
+                  <View key={i} style={styles.historyRow}>
+                    <Text style={styles.historyTime}>{time}</Text>
+                    <View style={styles.historyMetrics}>
+                      <Text style={styles.historyVal}>🌡{r.temperature_f}°F</Text>
+                      <Text style={styles.historyVal}>💧{r.humidity}%</Text>
+                      <Text style={styles.historyVal}>🪴{r.soil_moisture_raw}</Text>
+                      <Text style={styles.historyVal}>🚰{r.water_level_raw}</Text>
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          )}
         </View>
       </ScrollView>
 
@@ -468,6 +506,26 @@ const styles = StyleSheet.create({
   deleteConfirmText: { fontWeight: "bold", color: "#fff" },
   liveSensorSection: { marginBottom: 16 },
   sectionTitle: { fontSize: 16, fontWeight: "bold", color: "#18181b", marginBottom: 12 },
+  historySection: { marginTop: 24 },
+  historyRow: {
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    padding: 12,
+    marginTop: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  historyTime: { fontSize: 11, color: "#71717a", fontWeight: "600", width: 80 },
+  historyMetrics: { flexDirection: "row", gap: 8 },
+  historyVal: { fontSize: 11, fontWeight: "bold", color: "#18181b" },
+  editInput: {
+    backgroundColor: "#f4f4f5",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    marginBottom: 4,
+  },
   container: {
     flex: 1,
     backgroundColor: "#fafafa",

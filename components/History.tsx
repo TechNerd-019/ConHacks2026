@@ -75,7 +75,7 @@ export default function History() {
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
     >
       <Text style={styles.title}>📊 Sensor History</Text>
-      <Text style={styles.subtitle}>Data logged every 5 minutes via Snowflake</Text>
+      <Text style={styles.subtitle}>Data logged every 10 seconds via Snowflake</Text>
 
       {error && <Text style={styles.error}>{error}</Text>}
 
