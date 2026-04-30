@@ -280,6 +280,7 @@ export default function App() {
             onSelectPlant={handlePlantSelect}
             onAddClick={() => setActiveView('add')}
             onReorder={handleReorder}
+            displayName={session?.user?.user_metadata?.display_name}
           />
         );
 
@@ -312,6 +313,8 @@ export default function App() {
           <Profile
             onBack={() => setActiveView('garden')}
             email={session?.user?.email || ''}
+            avatarUrl={session?.user?.user_metadata?.avatar_url}
+            currentDisplayName={session?.user?.user_metadata?.display_name}
           />
         );
 
@@ -322,6 +325,7 @@ export default function App() {
             onSelectPlant={handlePlantSelect}
             onAddClick={() => setActiveView('add')}
             onReorder={handleReorder}
+            displayName={session?.user?.user_metadata?.display_name}
           />
         );
     }

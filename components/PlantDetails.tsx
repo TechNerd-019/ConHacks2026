@@ -9,6 +9,7 @@ import {
   Modal,
   Dimensions,
   TextInput,
+  Switch,
 } from "react-native";
 import {
   Heart,
@@ -117,6 +118,7 @@ export default function PlantDetails({
   const [editDescription, setEditDescription] = useState(plant.description);
   const [sensorData, setSensorData] = useState<any>(null);
   const [history, setHistory] = useState<any[]>([]);
+  const [lightOn, setLightOn] = useState(false);
 
   const fetchSensorData = useCallback(async () => {
     try {
@@ -132,9 +134,21 @@ export default function PlantDetails({
     } catch {}
   }, []);
 
+  const toggleLight = async (val: boolean) => {
+    setLightOn(val);
+    try {
+      await fetch('http://100.85.228.88:5000/light', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ state: val }),
+      });
+    } catch {}
+  };
+
   useEffect(() => {
     fetchSensorData();
     fetchHistory();
+    fetch('http://100.85.228.88:5000/light').then(r => r.json()).then(d => setLightOn(d.state)).catch(() => {});
     const interval = setInterval(() => { fetchSensorData(); fetchHistory(); }, 10000);
     return () => clearInterval(interval);
   }, [fetchSensorData, fetchHistory]);
@@ -263,7 +277,7 @@ export default function PlantDetails({
                   </Text>
                   <Text style={styles.sensorCardSubtitle}>Soil Health</Text>
                 </View>
-                <View style={[styles.sensorCard, { backgroundColor: '#fefce8' }]}>
+                <View style={[styles.sensorCard, { backgroundColor: '#f0fdf4' }]}>
                   <View style={styles.sensorCardHeader}>
                     <Sun size={20} color="#eab308" />
                     <Text style={styles.sensorCardLabel}>SOIL</Text>
@@ -283,6 +297,31 @@ export default function PlantDetails({
             )}
 
           </View>
+
+          {/* Light Toggle Card - shows when "light" is in plant metrics */}
+          {'light' in (plant.metrics || {}) && (
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onLongPress={() => setSensorToRemove('light')}
+              delayLongPress={800}
+              style={[styles.sensorCard, { backgroundColor: '#fefce8' }]}
+            >
+              <View style={styles.sensorCardHeader}>
+                <Sun size={20} color="#eab308" />
+                <Text style={styles.sensorCardLabel}>LIGHT</Text>
+              </View>
+              <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 4 }}>
+                <Text style={styles.sensorCardValue}>{lightOn ? 'On' : 'Off'}</Text>
+                <Switch
+                  value={lightOn}
+                  onValueChange={toggleLight}
+                  trackColor={{ false: '#e4e4e7', true: '#dcfce7' }}
+                  thumbColor={lightOn ? '#166534' : '#a1a1aa'}
+                />
+              </View>
+              <Text style={styles.sensorCardSubtitle}>Daily Exposure</Text>
+            </TouchableOpacity>
+          )}
 
           {/* Add Sensor Button */}
           <TouchableOpacity

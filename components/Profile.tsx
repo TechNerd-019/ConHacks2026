@@ -8,21 +8,52 @@ import {
   ScrollView,
   Alert,
   ActivityIndicator,
+  Image,
 } from 'react-native';
-import { ArrowLeft, Mail, Lock, User, Trash2, LogOut } from 'lucide-react-native';
+import { ArrowLeft, Mail, Lock, User, Trash2, LogOut, Camera } from 'lucide-react-native';
 import { supabase } from '../utils/supabase';
+import * as ImagePicker from 'expo-image-picker';
 
 interface ProfileProps {
   onBack: () => void;
   email: string;
+  avatarUrl?: string;
+  currentDisplayName?: string;
 }
 
-export default function Profile({ onBack, email }: ProfileProps) {
+export default function Profile({ onBack, email, avatarUrl, currentDisplayName }: ProfileProps) {
   const [newEmail, setNewEmail] = useState(email);
   const [newPassword, setNewPassword] = useState('');
-  const [displayName, setDisplayName] = useState('');
+  const [displayName, setDisplayName] = useState(currentDisplayName || '');
+  const [avatar, setAvatar] = useState(avatarUrl || '');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+
+  const handlePickAvatar = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.7,
+      allowsEditing: true,
+      aspect: [1, 1],
+    });
+    if (!result.canceled && result.assets[0]) {
+      setLoading(true);
+      try {
+        const fileName = `avatar_${Date.now()}.jpg`;
+        const resp = await fetch(result.assets[0].uri);
+        const blob = await resp.blob();
+        const arrayBuffer = await new Response(blob).arrayBuffer();
+        await supabase.storage.from('plant-photos').upload(fileName, arrayBuffer, { contentType: 'image/jpeg', upsert: true });
+        const { data: urlData } = supabase.storage.from('plant-photos').getPublicUrl(fileName);
+        await supabase.auth.updateUser({ data: { avatar_url: urlData.publicUrl } });
+        setAvatar(urlData.publicUrl);
+        setMessage('Profile photo updated!');
+      } catch {
+        setMessage('Failed to upload photo.');
+      }
+      setLoading(false);
+    }
+  };
 
   const handleUpdateEmail = async () => {
     if (!newEmail || newEmail === email) return;
@@ -87,9 +118,16 @@ export default function Profile({ onBack, email }: ProfileProps) {
   return (
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.avatar}>
-          <User size={32} color="#166534" />
-        </View>
+        <TouchableOpacity style={styles.avatar} onPress={handlePickAvatar}>
+          {avatar ? (
+            <Image source={{ uri: avatar }} style={{ width: 72, height: 72, borderRadius: 36 }} />
+          ) : (
+            <User size={32} color="#166534" />
+          )}
+          <View style={styles.avatarBadge}>
+            <Camera size={12} color="#fff" />
+          </View>
+        </TouchableOpacity>
         <Text style={styles.email}>{email}</Text>
 
         {message ? <Text style={styles.message}>{message}</Text> : null}
@@ -179,7 +217,11 @@ const styles = StyleSheet.create({
   avatar: {
     width: 72, height: 72, borderRadius: 36, backgroundColor: '#f0fdf4',
     alignItems: 'center', justifyContent: 'center', alignSelf: 'center', marginBottom: 8,
-    borderWidth: 2, borderColor: '#dcfce7',
+    borderWidth: 2, borderColor: '#dcfce7', overflow: 'hidden',
+  },
+  avatarBadge: {
+    position: 'absolute', bottom: 0, right: 0, width: 24, height: 24, borderRadius: 12,
+    backgroundColor: '#166534', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: '#fff',
   },
   email: { textAlign: 'center', color: '#71717a', fontSize: 14, marginBottom: 24 },
   message: { backgroundColor: '#f0fdf4', color: '#166534', padding: 12, borderRadius: 12, marginBottom: 16, fontSize: 13 },

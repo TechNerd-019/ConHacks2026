@@ -15,6 +15,7 @@ interface DashboardProps {
   onSelectPlant: (plant: Plant) => void;
   onAddClick: () => void;
   onReorder?: (plants: Plant[]) => void;
+  displayName?: string;
 }
 
 export default function Dashboard({
@@ -22,6 +23,7 @@ export default function Dashboard({
   onSelectPlant,
   onAddClick,
   onReorder,
+  displayName,
 }: DashboardProps) {
   const [reordering, setReordering] = useState(false);
   const [latest, setLatest] = useState<any>(null);
@@ -62,7 +64,7 @@ export default function Dashboard({
       >
         <View style={styles.header}>
           <View>
-            <Text style={styles.title}>Hello, Gardener</Text>
+            <Text style={styles.title}>Hello, {displayName || 'Gardener'}</Text>
             <Text style={styles.subtitle}>
               Your indoor oasis is thriving today.
             </Text>
