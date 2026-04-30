@@ -32,6 +32,7 @@ export default function Layout({
   const navItems = [
     { id: "garden", label: "Garden", icon: Home },
     { id: "add", label: "Add", icon: PlusCircle },
+    { id: "history", label: "History", icon: BarChart2 },
     { id: "assistant", label: "Assistant", icon: Sparkles },
   ];
 

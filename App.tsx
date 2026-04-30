@@ -7,6 +7,7 @@ import PlantDetails from './components/PlantDetails';
 import Assistant from './components/Assistant';
 import AddPlant from './components/AddPlant';
 import SensorData from './components/SensorData';
+import History from './components/History';
 import { View, Plant, Message } from './types';
 import { INITIAL_MESSAGES } from './constants';
 import { supabase } from './utils/supabase';
@@ -247,6 +248,9 @@ export default function App() {
 
       case 'assistant':
         return <Assistant messages={messages} onSendMessage={handleSendMessage} />;
+
+      case 'history':
+        return <History />;
 
       case 'add':
         return (
