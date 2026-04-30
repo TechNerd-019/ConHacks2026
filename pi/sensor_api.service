@@ -1,0 +1,12 @@
+[Unit]
+Description=Sensor API
+After=network.target
+
+[Service]
+User=piplant
+WorkingDirectory=/home/piplant
+ExecStart=/home/piplant/sensors_env/bin/python /home/piplant/sensor_api.py
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

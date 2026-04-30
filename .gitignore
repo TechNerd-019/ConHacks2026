@@ -10,7 +10,6 @@ web-build/
 expo-env.d.ts
 
 # Native
-.kotlin/
 *.orig.*
 *.jks
 *.p8
@@ -36,6 +35,6 @@ yarn-error.*
 # typescript
 *.tsbuildinfo
 
-# generated native folders
-/ios
-/android
+# Environment files with secrets
+.env
+pi/sensor_api.py

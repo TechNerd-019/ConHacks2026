@@ -1,31 +1,28 @@
 {
   "expo": {
-    "name": "PlantMonitor",
-    "slug": "PlantMonitor",
+    "name": "PlantHub",
+    "slug": "planthub",
     "version": "1.0.0",
-    "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "userInterfaceStyle": "light",
-    "newArchEnabled": true,
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
-    },
-    "ios": {
-      "supportsTablet": true
+      "backgroundColor": "#fafafa"
     },
     "android": {
+      "permissions": ["CAMERA"],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
-      },
-      "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.PlantMonitor",
-      "usesCleartextTraffic": true
+        "backgroundColor": "#fafafa"
+      }
     },
-    "web": {
-      "favicon": "./assets/favicon.png"
-    }
+    "plugins": [
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow PlantHub to use your camera to photograph plants."
+        }
+      ]
+    ]
   }
 }
