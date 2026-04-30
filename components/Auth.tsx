@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Animated,
 } from 'react-native';
 import { Leaf } from 'lucide-react-native';
 import { supabase } from '../utils/supabase';
@@ -18,6 +19,11 @@ export default function Auth({ onAuth }: { onAuth: () => void }) {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, { toValue: 1, duration: 600, useNativeDriver: true }).start();
+  }, []);
 
   const handleSubmit = async () => {
     if (!email || !password) {
@@ -50,7 +56,7 @@ export default function Auth({ onAuth }: { onAuth: () => void }) {
       style={styles.container}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <View style={styles.inner}>
+      <Animated.View style={[styles.inner, { opacity: fadeAnim, transform: [{ translateY: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [30, 0] }) }] }]}>
         <View style={styles.logoRow}>
           <Leaf size={32} color="#166534" fill="#166534" />
           <Text style={styles.title}>PlantHub</Text>
@@ -100,7 +106,7 @@ export default function Auth({ onAuth }: { onAuth: () => void }) {
             {isSignUp ? 'Already have an account? Sign In' : "Don't have an account? Sign Up"}
           </Text>
         </TouchableOpacity>
-      </View>
+      </Animated.View>
     </KeyboardAvoidingView>
   );
 }

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import {
   View,
   Text,
@@ -6,6 +6,7 @@ import {
   ScrollView,
   Image,
   StyleSheet,
+  Animated,
 } from "react-native";
 import { Camera, ArrowUp, ArrowDown, GripVertical, Thermometer, Droplets, Sun, Waves } from "lucide-react-native";
 import { Plant } from "../types";
@@ -79,12 +80,7 @@ export default function Dashboard({
 
         <View style={styles.grid}>
           {plants.map((plant, index) => (
-            <TouchableOpacity
-              key={plant.id}
-              activeOpacity={0.9}
-              onPress={() => !reordering && onSelectPlant(plant)}
-              style={styles.card}
-            >
+            <AnimatedCard key={plant.id} index={index} onPress={() => !reordering && onSelectPlant(plant)}>
               {reordering && (
                 <View style={styles.reorderControls}>
                   <TouchableOpacity style={styles.arrowBtn} onPress={() => moveUp(index)} disabled={index === 0}>
@@ -159,12 +155,37 @@ export default function Dashboard({
                   </View>
                 </View>
               )}
-            </TouchableOpacity>
+            </AnimatedCard>
           ))}
         </View>
       </ScrollView>
 
     </View>
+  );
+}
+
+function AnimatedCard({ children, index, onPress }: { children: React.ReactNode; index: number; onPress: () => void }) {
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 400,
+      delay: index * 100,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const onPressIn = () => Animated.spring(scaleAnim, { toValue: 0.96, useNativeDriver: true }).start();
+  const onPressOut = () => Animated.spring(scaleAnim, { toValue: 1, friction: 3, useNativeDriver: true }).start();
+
+  return (
+    <Animated.View style={[styles.card, { opacity: fadeAnim, transform: [{ scale: scaleAnim }, { translateY: fadeAnim.interpolate({ inputRange: [0, 1], outputRange: [20, 0] }) }] }]}>
+      <TouchableOpacity activeOpacity={1} onPress={onPress} onPressIn={onPressIn} onPressOut={onPressOut} style={{ flex: 1 }}>
+        {children}
+      </TouchableOpacity>
+    </Animated.View>
   );
 }
 

@@ -10,6 +10,7 @@ import SensorData from './components/SensorData';
 import History from './components/History';
 import Auth from './components/Auth';
 import Profile from './components/Profile';
+import Inbox, { Notification } from './components/Inbox';
 import { View, Plant, Message } from './types';
 import { INITIAL_MESSAGES } from './constants';
 import { supabase } from './utils/supabase';
@@ -23,6 +24,7 @@ export default function App() {
   const [plants, setPlants] = useState<Plant[]>([]);
   const [messages, setMessages] = useState<Message[]>(INITIAL_MESSAGES);
   const [loading, setLoading] = useState(true);
+  const [notifications, setNotifications] = useState<Notification[]>([]);
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -63,6 +65,44 @@ export default function App() {
   useEffect(() => {
     if (session && activeView === 'garden') fetchPlants();
   }, [activeView]);
+
+  // Check plant health and generate notifications
+  const addNotification = (title: string, body: string, type: 'critical' | 'reminder' | 'info') => {
+    setNotifications(prev => {
+      if (prev.some(n => n.title === title && Date.now() - n.timestamp.getTime() < 60000)) return prev;
+      return [{ id: `n${Date.now()}`, title, body, type, timestamp: new Date(), read: false }, ...prev];
+    });
+  };
+
+  useEffect(() => {
+    if (!plants.length) return;
+    plants.forEach(p => {
+      if (p.vitality <= 40) {
+        addNotification(`⚠️ ${p.name} is critical!`, `Vitality at ${p.vitality}%. Needs immediate attention.`, 'critical');
+      } else if (p.vitality <= 60) {
+        addNotification(`${p.name} needs care`, `Vitality at ${p.vitality}%. Consider checking on it.`, 'reminder');
+      }
+    });
+  }, [plants]);
+
+  // Flora auto-reminders based on sensor data
+  useEffect(() => {
+    const checkSensors = async () => {
+      try {
+        const res = await fetch('http://100.85.228.88:5000/sensors');
+        const data = await res.json();
+        if (data.soil_moisture && data.soil_moisture.raw < 1000) {
+          addNotification('🪴 Soil is dry', 'Soil moisture is very low. Time to water your plants!', 'reminder');
+        }
+        if (data.humidity != null && data.humidity < 30) {
+          addNotification('💧 Low humidity', `Humidity is at ${data.humidity}%. Consider misting your plants.`, 'info');
+        }
+      } catch {}
+    };
+    checkSensors();
+    const interval = setInterval(checkSensors, 60000);
+    return () => clearInterval(interval);
+  }, []);
 
   if (authLoading) {
     return (
@@ -325,6 +365,15 @@ export default function App() {
           />
         );
 
+      case 'inbox':
+        return (
+          <Inbox
+            notifications={notifications}
+            onDismiss={(id) => setNotifications(prev => prev.filter(n => n.id !== id))}
+            onClearAll={() => setNotifications([])}
+          />
+        );
+
       default:
         return (
           <Dashboard
@@ -343,7 +392,7 @@ export default function App() {
       <StatusBar
         style={activeView === 'add' || activeView === 'detail' ? 'light' : 'dark'}
       />
-      <Layout activeView={activeView} onViewChange={setActiveView} onProfilePress={() => setActiveView('profile')}>
+      <Layout activeView={activeView} onViewChange={setActiveView} onProfilePress={() => setActiveView('profile')} onInboxPress={() => setActiveView('inbox')} notificationCount={notifications.length} avatarUrl={session?.user?.user_metadata?.avatar_url}>
         {renderView()}
       </Layout>
     </>

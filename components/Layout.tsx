@@ -7,6 +7,7 @@ import {
   SafeAreaView,
   Platform,
   StatusBar,
+  Image,
 } from "react-native";
 import {
   Home,
@@ -15,6 +16,7 @@ import {
   Sparkles,
   User,
   Leaf,
+  Bell,
 } from "lucide-react-native";
 import { View as ViewType } from "../types";
 import { supabase } from "../utils/supabase";
@@ -24,6 +26,9 @@ interface LayoutProps {
   activeView: ViewType;
   onViewChange: (view: ViewType) => void;
   onProfilePress: () => void;
+  onInboxPress: () => void;
+  notificationCount: number;
+  avatarUrl?: string;
 }
 
 export default function Layout({
@@ -31,6 +36,9 @@ export default function Layout({
   activeView,
   onViewChange,
   onProfilePress,
+  onInboxPress,
+  notificationCount,
+  avatarUrl,
 }: LayoutProps) {
   const navItems = [
     { id: "garden", label: "Garden", icon: Home },
@@ -46,9 +54,23 @@ export default function Layout({
           <Leaf size={24} color="#166534" fill="#166534" />
           <Text style={styles.headerTitle}>FloraTracker</Text>
         </View>
-        <TouchableOpacity style={styles.userButton} onPress={onProfilePress}>
-          <User size={20} color="#52525b" />
-        </TouchableOpacity>
+        <View style={{ flexDirection: 'row', gap: 8 }}>
+          <TouchableOpacity style={styles.userButton} onPress={onInboxPress}>
+            <Bell size={20} color="#52525b" />
+            {notificationCount > 0 && (
+              <View style={{ position: 'absolute', top: -4, right: -4, backgroundColor: '#dc2626', borderRadius: 8, width: 16, height: 16, alignItems: 'center', justifyContent: 'center' }}>
+                <Text style={{ color: '#fff', fontSize: 9, fontWeight: 'bold' }}>{notificationCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.userButton} onPress={onProfilePress}>
+            {avatarUrl ? (
+              <Image source={{ uri: avatarUrl }} style={{ width: 32, height: 32, borderRadius: 16 }} />
+            ) : (
+              <User size={20} color="#52525b" />
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Main Content */}

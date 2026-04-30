@@ -78,10 +78,11 @@ export default function Assistant({ messages, onSendMessage }: AssistantProps) {
         })}
 
         <View style={styles.suggestionRow}>
-          <TouchableOpacity style={styles.suggestionButton}>
-            <Droplets size={16} color="#166534" />
-            <Text style={styles.suggestionText}>Log Watering Now</Text>
-          </TouchableOpacity>
+          {['How are my plants?', 'Should I water?', 'Turn on lights'].map((text) => (
+            <TouchableOpacity key={text} style={styles.suggestionButton} onPress={() => { onSendMessage(text); }}>
+              <Text style={styles.suggestionText}>{text}</Text>
+            </TouchableOpacity>
+          ))}
         </View>
       </ScrollView>
 
@@ -185,18 +186,18 @@ const styles = StyleSheet.create({
   },
   suggestionRow: {
     flexDirection: "row",
+    flexWrap: "wrap",
     marginTop: 8,
+    gap: 8,
   },
   suggestionButton: {
     backgroundColor: "#ffffff",
     borderWidth: 1,
     borderColor: "#f4f4f5",
-    flexDirection: "row",
     alignItems: "center",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    borderRadius: 24,
-    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.05,
@@ -206,7 +207,7 @@ const styles = StyleSheet.create({
   suggestionText: {
     fontSize: 12,
     fontWeight: "bold",
-    color: "#18181b",
+    color: "#166534",
   },
   inputContainer: {
     padding: 16,
