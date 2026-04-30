@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
   View,
   Text,
@@ -7,20 +7,38 @@ import {
   Image,
   StyleSheet,
 } from "react-native";
-import { Camera } from "lucide-react-native";
+import { Camera, ArrowUp, ArrowDown, GripVertical } from "lucide-react-native";
 import { Plant } from "../types";
 
 interface DashboardProps {
   plants: Plant[];
   onSelectPlant: (plant: Plant) => void;
   onAddClick: () => void;
+  onReorder?: (plants: Plant[]) => void;
 }
 
 export default function Dashboard({
   plants,
   onSelectPlant,
   onAddClick,
+  onReorder,
 }: DashboardProps) {
+  const [reordering, setReordering] = useState(false);
+
+  const moveUp = (index: number) => {
+    if (index === 0 || !onReorder) return;
+    const arr = [...plants];
+    [arr[index - 1], arr[index]] = [arr[index], arr[index - 1]];
+    onReorder(arr);
+  };
+
+  const moveDown = (index: number) => {
+    if (index === plants.length - 1 || !onReorder) return;
+    const arr = [...plants];
+    [arr[index], arr[index + 1]] = [arr[index + 1], arr[index]];
+    onReorder(arr);
+  };
+
   return (
     <View style={styles.container}>
       <ScrollView
@@ -28,20 +46,38 @@ export default function Dashboard({
         showsVerticalScrollIndicator={false}
       >
         <View style={styles.header}>
-          <Text style={styles.title}>Hello, Gardener</Text>
-          <Text style={styles.subtitle}>
-            Your indoor oasis is thriving today.
-          </Text>
+          <View>
+            <Text style={styles.title}>Hello, Gardener</Text>
+            <Text style={styles.subtitle}>
+              Your indoor oasis is thriving today.
+            </Text>
+          </View>
+          <TouchableOpacity
+            style={[styles.reorderBtn, reordering && styles.reorderBtnActive]}
+            onPress={() => setReordering(!reordering)}
+          >
+            <GripVertical size={18} color={reordering ? "#fff" : "#166534"} />
+          </TouchableOpacity>
         </View>
 
         <View style={styles.grid}>
-          {plants.map((plant) => (
+          {plants.map((plant, index) => (
             <TouchableOpacity
               key={plant.id}
               activeOpacity={0.9}
-              onPress={() => onSelectPlant(plant)}
+              onPress={() => !reordering && onSelectPlant(plant)}
               style={styles.card}
             >
+              {reordering && (
+                <View style={styles.reorderControls}>
+                  <TouchableOpacity style={styles.arrowBtn} onPress={() => moveUp(index)} disabled={index === 0}>
+                    <ArrowUp size={18} color={index === 0 ? "#d4d4d8" : "#166534"} />
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.arrowBtn} onPress={() => moveDown(index)} disabled={index === plants.length - 1}>
+                    <ArrowDown size={18} color={index === plants.length - 1 ? "#d4d4d8" : "#166534"} />
+                  </TouchableOpacity>
+                </View>
+              )}
               <View style={styles.imageContainer}>
                 <Image source={plant.imageUrl ? { uri: plant.imageUrl } : undefined} style={styles.image} />
                 <View style={styles.badge}>
@@ -90,19 +126,23 @@ export default function Dashboard({
         </View>
       </ScrollView>
 
-      {/* Floating Action Button */}
-      <TouchableOpacity
-        style={styles.fab}
-        activeOpacity={0.8}
-        onPress={onAddClick}
-      >
-        <Camera color="#ffffff" size={24} />
-      </TouchableOpacity>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  reorderBtn: {
+    width: 36, height: 36, borderRadius: 18, backgroundColor: "#f0fdf4",
+    alignItems: "center", justifyContent: "center", borderWidth: 1, borderColor: "#dcfce7",
+  },
+  reorderBtnActive: { backgroundColor: "#166534", borderColor: "#166534" },
+  reorderControls: {
+    position: "absolute", right: 8, top: 8, zIndex: 10, flexDirection: "column", gap: 4,
+  },
+  arrowBtn: {
+    width: 32, height: 32, borderRadius: 16, backgroundColor: "#f0fdf4",
+    alignItems: "center", justifyContent: "center",
+  },
   container: {
     flex: 1,
     backgroundColor: "#fafafa",
@@ -114,6 +154,9 @@ const styles = StyleSheet.create({
   },
   header: {
     marginBottom: 32,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
   },
   title: {
     fontSize: 32,

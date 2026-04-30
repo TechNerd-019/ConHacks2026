@@ -31,7 +31,6 @@ export default function Layout({
 }: LayoutProps) {
   const navItems = [
     { id: "garden", label: "Garden", icon: Home },
-    { id: "analytics", label: "Analytics", icon: BarChart2 },
     { id: "add", label: "Add", icon: PlusCircle },
     { id: "assistant", label: "Assistant", icon: Sparkles },
   ];

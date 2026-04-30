@@ -23,7 +23,8 @@ export default function App() {
   const fetchPlants = async () => {
     const { data, error } = await supabase
       .from('plants')
-      .select('*');
+      .select('*')
+      .order('sort_order');
 
     if (error) {
       console.error('Error fetching plants:', error.message);
@@ -149,6 +150,15 @@ export default function App() {
     setSelectedPlant(updatedPlant);
   };
 
+  const handleReorder = async (reordered: Plant[]) => {
+    setPlants(reordered);
+    await Promise.all(
+      reordered.map((p, i) =>
+        supabase.from('plants').update({ sort_order: i }).eq('id', Number(p.id))
+      )
+    );
+  };
+
   const handleRemoveSensor = (sensorType: string) => {
     if (!selectedPlant) return;
 
@@ -160,6 +170,47 @@ export default function App() {
 
     setPlants(plants.map(p => p.id === updatedPlant.id ? updatedPlant : p));
     setSelectedPlant(updatedPlant);
+  };
+
+  const handleDeletePlant = async (plantId: string) => {
+    const { error } = await supabase.from('plants').delete().eq('id', Number(plantId));
+    if (error) {
+      console.error('Delete failed:', error.message);
+      return;
+    }
+    setSelectedPlant(null);
+    setActiveView('garden');
+    await fetchPlants();
+  };
+
+  const handleUpdatePhoto = async (plantId: string, photoUri: string) => {
+    try {
+      const fileName = `${Date.now()}.jpg`;
+      const resp = await fetch(photoUri);
+      const blob = await resp.blob();
+      const arrayBuffer = await new Response(blob).arrayBuffer();
+      const { error: uploadError } = await supabase.storage
+        .from('plant-photos')
+        .upload(fileName, arrayBuffer, { contentType: 'image/jpeg', upsert: true });
+
+      if (uploadError) {
+        console.error('Photo upload failed:', uploadError.message);
+        return;
+      }
+
+      const { data: urlData } = supabase.storage.from('plant-photos').getPublicUrl(fileName);
+      const { error } = await supabase.from('plants').update({ imageUrl: urlData.publicUrl }).eq('id', Number(plantId));
+      if (error) {
+        console.error('Update failed:', error.message);
+        return;
+      }
+
+      await fetchPlants();
+      const updated = plants.find(p => p.id === plantId);
+      if (updated) setSelectedPlant({ ...updated, imageUrl: urlData.publicUrl });
+    } catch (e: any) {
+      console.error('Update photo error:', e.message);
+    }
   };
 
   if (loading) {
@@ -178,6 +229,7 @@ export default function App() {
             plants={plants}
             onSelectPlant={handlePlantSelect}
             onAddClick={() => setActiveView('add')}
+            onReorder={handleReorder}
           />
         );
 
@@ -188,14 +240,13 @@ export default function App() {
             onBack={() => setActiveView('garden')}
             onAddSensor={handleAddSensor}
             onRemoveSensor={handleRemoveSensor}
+            onDelete={handleDeletePlant}
+            onUpdatePhoto={handleUpdatePhoto}
           />
         ) : null;
 
       case 'assistant':
         return <Assistant messages={messages} onSendMessage={handleSendMessage} />;
-
-      case 'analytics':
-        return <SensorData />;
 
       case 'add':
         return (
@@ -211,6 +262,7 @@ export default function App() {
             plants={plants}
             onSelectPlant={handlePlantSelect}
             onAddClick={() => setActiveView('add')}
+            onReorder={handleReorder}
           />
         );
     }

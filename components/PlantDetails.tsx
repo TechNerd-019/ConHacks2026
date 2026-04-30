@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   View,
   Text,
@@ -22,9 +22,12 @@ import {
   Wind,
   X,
   Trash2,
+  Camera,
 } from "lucide-react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { Plant } from "../types";
+
+import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get("window");
 
@@ -33,6 +36,8 @@ interface PlantDetailsProps {
   onBack: () => void;
   onAddSensor: (sensorType: string) => void;
   onRemoveSensor: (sensorType: string) => void;
+  onDelete: (plantId: string) => void;
+  onUpdatePhoto: (plantId: string, photoUri: string) => void;
 }
 
 const SENSOR_METADATA: Record<
@@ -95,10 +100,38 @@ export default function PlantDetails({
   onBack,
   onAddSensor,
   onRemoveSensor,
+  onDelete,
+  onUpdatePhoto,
 }: PlantDetailsProps) {
   const [isAddingSensor, setIsAddingSensor] = useState(false);
   const [sensorToRemove, setSensorToRemove] = useState<string | null>(null);
   const [showFullImage, setShowFullImage] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [sensorData, setSensorData] = useState<any>(null);
+
+  const fetchSensorData = useCallback(async () => {
+    try {
+      const res = await fetch('http://100.85.228.88:5000/sensors');
+      const json = await res.json();
+      setSensorData(json);
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    fetchSensorData();
+    const interval = setInterval(fetchSensorData, 5000);
+    return () => clearInterval(interval);
+  }, [fetchSensorData]);
+
+  const handlePickPhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      quality: 0.8,
+    });
+    if (!result.canceled && result.assets[0]) {
+      onUpdatePhoto(plant.id, result.assets[0].uri);
+    }
+  };
 
   const activeSensors = Object.keys(plant.metrics) as Array<
     keyof typeof plant.metrics
@@ -130,13 +163,14 @@ export default function PlantDetails({
               <Text style={styles.plantName}>{plant.name}</Text>
               <Text style={styles.plantSpecies}>Tropical Evergreen</Text>
             </View>
-            <TouchableOpacity style={styles.heartButton}>
-              <Heart
-                size={24}
-                color={plant.isFavorite ? "#f87171" : "#a1a1aa"}
-                fill={plant.isFavorite ? "#f87171" : "transparent"}
-              />
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', gap: 8 }}>
+              <TouchableOpacity style={styles.heartButton} onPress={handlePickPhoto}>
+                <Camera size={20} color="#166534" />
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.heartButton, { backgroundColor: '#fef2f2' }]} onPress={() => setShowDeleteConfirm(true)}>
+                <Trash2 size={20} color="#f87171" />
+              </TouchableOpacity>
+            </View>
           </View>
 
           {/* Vitality Bar */}
@@ -164,6 +198,49 @@ export default function PlantDetails({
 
           {/* Sensor Grid */}
           <View style={styles.grid}>
+            {/* Live Pi Sensors */}
+            {sensorData && (
+              <>
+                <View style={[styles.sensorCard, { backgroundColor: '#fef2f2' }]}>
+                  <View style={styles.sensorCardHeader}>
+                    <Thermometer size={20} color="#f87171" />
+                    <Text style={styles.sensorCardLabel}>CLIMATE</Text>
+                  </View>
+                  <Text style={styles.sensorCardValue}>
+                    {sensorData.temperature_f != null ? `${sensorData.temperature_f}°` : '—'}
+                  </Text>
+                  <Text style={styles.sensorCardSubtitle}>{sensorData.temperature_c != null ? `${sensorData.temperature_c}°C` : 'Optimal Range'}</Text>
+                </View>
+                <View style={[styles.sensorCard, { backgroundColor: '#eff6ff' }]}>
+                  <View style={styles.sensorCardHeader}>
+                    <Droplets size={20} color="#166534" />
+                    <Text style={styles.sensorCardLabel}>MOISTURE</Text>
+                  </View>
+                  <Text style={styles.sensorCardValue}>
+                    {sensorData.humidity != null ? `${sensorData.humidity}%` : '—'}
+                  </Text>
+                  <Text style={styles.sensorCardSubtitle}>Soil Health</Text>
+                </View>
+                <View style={[styles.sensorCard, { backgroundColor: '#fefce8' }]}>
+                  <View style={styles.sensorCardHeader}>
+                    <Sun size={20} color="#eab308" />
+                    <Text style={styles.sensorCardLabel}>SOIL</Text>
+                  </View>
+                  <Text style={styles.sensorCardValue}>{sensorData.soil_moisture.raw}</Text>
+                  <Text style={styles.sensorCardSubtitle}>{sensorData.soil_moisture.voltage}V</Text>
+                </View>
+                <View style={[styles.sensorCard, { backgroundColor: '#ecfeff' }]}>
+                  <View style={styles.sensorCardHeader}>
+                    <Waves size={20} color="#0891b2" />
+                    <Text style={styles.sensorCardLabel}>RESERVOIR</Text>
+                  </View>
+                  <Text style={styles.sensorCardValue}>{sensorData.water_level.raw}</Text>
+                  <Text style={styles.sensorCardSubtitle}>{sensorData.water_level.voltage}V</Text>
+                </View>
+              </>
+            )}
+
+            {/* Placeholder sensors from plant data */}
             {activeSensors.map((sensorKey) => {
               const meta = SENSOR_METADATA[sensorKey];
               const value = plant.metrics[sensorKey];
@@ -319,6 +396,25 @@ export default function PlantDetails({
           </TouchableOpacity>
         </View>
       </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal visible={showDeleteConfirm} transparent animationType="fade">
+        <View style={styles.deleteOverlay}>
+          <View style={styles.deleteCard}>
+            <Trash2 size={32} color="#f87171" />
+            <Text style={styles.deleteTitle}>Delete {plant.name}?</Text>
+            <Text style={styles.deleteSubtitle}>This cannot be undone.</Text>
+            <View style={styles.deleteButtons}>
+              <TouchableOpacity style={styles.deleteCancelBtn} onPress={() => setShowDeleteConfirm(false)}>
+                <Text style={styles.deleteCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.deleteConfirmBtn} onPress={() => onDelete(plant.id)}>
+                <Text style={styles.deleteConfirmText}>Delete</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -345,6 +441,33 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
+  deleteOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  deleteCard: {
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 32,
+    alignItems: "center",
+    width: "80%",
+    gap: 12,
+  },
+  deleteTitle: { fontSize: 20, fontWeight: "bold", color: "#18181b" },
+  deleteSubtitle: { fontSize: 14, color: "#71717a" },
+  deleteButtons: { flexDirection: "row", gap: 12, marginTop: 8 },
+  deleteCancelBtn: {
+    flex: 1, paddingVertical: 14, borderRadius: 16, backgroundColor: "#f4f4f5", alignItems: "center",
+  },
+  deleteCancelText: { fontWeight: "bold", color: "#18181b" },
+  deleteConfirmBtn: {
+    flex: 1, paddingVertical: 14, borderRadius: 16, backgroundColor: "#f87171", alignItems: "center",
+  },
+  deleteConfirmText: { fontWeight: "bold", color: "#fff" },
+  liveSensorSection: { marginBottom: 16 },
+  sectionTitle: { fontSize: 16, fontWeight: "bold", color: "#18181b", marginBottom: 12 },
   container: {
     flex: 1,
     backgroundColor: "#fafafa",
