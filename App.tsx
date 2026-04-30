@@ -114,6 +114,7 @@ export default function App() {
       const { data, error } = await supabase
         .from('plants')
         .insert([{
+          user_id: session.user.id,
           name: formData.name || 'New Plant',
           species: formData.species || 'Unknown',
           location: 'New Room',
