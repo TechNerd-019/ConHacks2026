@@ -20,28 +20,32 @@ export default function App() {
 
 
   // Plant fetching logic using Supabase
+  const fetchPlants = async () => {
+    const { data, error } = await supabase
+      .from('plants')
+      .select('*');
+
+    if (error) {
+      console.error('Error fetching plants:', error.message);
+    } else if (data) {
+      setPlants(
+        data.map((p: any) => ({
+          ...p,
+          id: String(p.id),
+        }))
+      );
+    }
+    setLoading(false);
+  };
+
   useEffect(() => {
-    const fetchPlants = async () => {
-      const { data, error } = await supabase
-        .from('plants')
-        .select('*');
-
-      if (error) {
-        console.error('Error fetching plants:', error.message);
-      } else if (data) {
-        setPlants(
-          data.map((p: any) => ({
-            ...p,
-            id: String(p.id), // normalize ID type
-          }))
-        );
-      }
-
-      setLoading(false);
-    };
-
     fetchPlants();
   }, []);
+
+  // Refetch when returning to garden
+  useEffect(() => {
+    if (activeView === 'garden') fetchPlants();
+  }, [activeView]);
 
   // -------------------------
   // UI HANDLERS
@@ -55,41 +59,56 @@ export default function App() {
   // ADD PLANT (Supabase insert)
   // -------------------------
   const handleAddPlant = async (formData: any) => {
-    const { data, error } = await supabase
-      .from('plants')
-      .insert([
-        {
+    try {
+      // Step 1: Upload photo to Supabase Storage
+      let imageUrl = '';
+      if (formData.photo) {
+        const fileName = `${Date.now()}.jpg`;
+        const resp = await fetch(formData.photo);
+        const blob = await resp.blob();
+        const arrayBuffer = await new Response(blob).arrayBuffer();
+        const { error: uploadError } = await supabase.storage
+          .from('plant-photos')
+          .upload(fileName, arrayBuffer, { contentType: 'image/jpeg', upsert: true });
+
+        if (uploadError) {
+          console.error('Photo upload failed:', uploadError.message);
+        } else {
+          const { data: urlData } = supabase.storage
+            .from('plant-photos')
+            .getPublicUrl(fileName);
+          imageUrl = urlData.publicUrl;
+        }
+      }
+
+      // Step 2: Insert plant row with photo URL
+      const { data, error } = await supabase
+        .from('plants')
+        .insert([{
           name: formData.name || 'New Plant',
           species: formData.species || 'Unknown',
           location: 'New Room',
-          imageUrl:
-            'https://lh3.googleusercontent.com/aida-public/AB6AXuDZ3SKx6HgPEbRz-MeKYYSvW1S6MVZVPwJK_6kdzaXMzNXOxtqyEiuXkv3FQ8vya88nDZblD_UPzZP6sGXUJXmK98rv1yWdxpbWx0tTrgjmouGsCEbkkdiw6hbfmiIcfHuKxj2gOaof9mUQaYRCT5Wf5sTkR9YKdUMwOYXWsybFonurxLyn28x3vAbWKqMy_saGKj_i3MkBNVAEkPmR5EH4jZmOiD-VVjbOL9r66ex6Qada4I-jMhuK6kyGSiXxBv6sw1WVgDxG2NoG',
+          imageUrl,
           vitality: 80,
           status: 'Good',
           metrics: { temp: 72, moisture: 50, reservoir: 100, light: 75 },
           description: formData.notes || 'A new discovery in your garden.',
           isFavorite: false,
-        },
-      ])
-      .select()
-      .single();
+        }])
+        .select()
+        .single();
 
-    if (error) {
-      console.error('Error adding plant:', error.message);
-      return;
+      if (error) {
+        console.error('DB insert failed:', error.message);
+        return;
+      }
+
+      // Step 3: Refresh plants and go to garden
+      await fetchPlants();
+      setActiveView('garden');
+    } catch (e: any) {
+      console.error('handleAddPlant error:', e.message);
     }
-
-    if (data) {
-      setPlants(prev => [
-        ...prev,
-        {
-          ...data,
-          id: String(data.id),
-        },
-      ]);
-    }
-
-    setActiveView('garden');
   };
 
   const handleSendMessage = (content: string) => {

@@ -43,7 +43,7 @@ export default function Dashboard({
               style={styles.card}
             >
               <View style={styles.imageContainer}>
-                <Image source={{ uri: plant.imageUrl }} style={styles.image} />
+                <Image source={plant.imageUrl ? { uri: plant.imageUrl } : undefined} style={styles.image} />
                 <View style={styles.badge}>
                   <View
                     style={[

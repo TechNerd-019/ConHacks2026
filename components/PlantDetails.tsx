@@ -98,6 +98,7 @@ export default function PlantDetails({
 }: PlantDetailsProps) {
   const [isAddingSensor, setIsAddingSensor] = useState(false);
   const [sensorToRemove, setSensorToRemove] = useState<string | null>(null);
+  const [showFullImage, setShowFullImage] = useState(false);
 
   const activeSensors = Object.keys(plant.metrics) as Array<
     keyof typeof plant.metrics
@@ -115,7 +116,9 @@ export default function PlantDetails({
       >
         {/* Hero Header */}
         <View style={styles.heroContainer}>
-          <Image source={{ uri: plant.imageUrl }} style={styles.heroImage} />
+          <TouchableOpacity activeOpacity={0.9} onPress={() => setShowFullImage(true)}>
+            <Image source={{ uri: plant.imageUrl }} style={styles.heroImage} />
+          </TouchableOpacity>
           <TouchableOpacity style={styles.backButton} onPress={onBack}>
             <ArrowLeft color="#ffffff" size={20} />
           </TouchableOpacity>
@@ -302,11 +305,46 @@ export default function PlantDetails({
           </View>
         </View>
       </Modal>
+
+      {/* Fullscreen Image Modal */}
+      <Modal visible={showFullImage} transparent animationType="fade">
+        <View style={styles.fullImageOverlay}>
+          <Image
+            source={{ uri: plant.imageUrl }}
+            style={styles.fullImage}
+            resizeMode="contain"
+          />
+          <TouchableOpacity style={styles.fullImageClose} onPress={() => setShowFullImage(false)}>
+            <X color="#ffffff" size={24} />
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  fullImageOverlay: {
+    flex: 1,
+    backgroundColor: "#000",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  fullImage: {
+    width: "100%",
+    height: "100%",
+  },
+  fullImageClose: {
+    position: "absolute",
+    top: 50,
+    right: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "rgba(255,255,255,0.2)",
+    alignItems: "center",
+    justifyContent: "center",
+  },
   container: {
     flex: 1,
     backgroundColor: "#fafafa",

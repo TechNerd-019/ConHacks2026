@@ -208,7 +208,7 @@ export default function AddPlant({ onAdd, onCancel }: AddPlantProps) {
           </ScrollView>
 
           <View style={styles.actionCont}>
-            <TouchableOpacity style={styles.addButton} onPress={() => onAdd(formData)} activeOpacity={0.8}>
+            <TouchableOpacity style={styles.addButton} onPress={() => onAdd({ ...formData, photo })} activeOpacity={0.8}>
               <Plus size={20} color="#ffffff" />
               <Text style={styles.addButtonText}>Add to Garden</Text>
             </TouchableOpacity>
